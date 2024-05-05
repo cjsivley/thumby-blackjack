@@ -2,7 +2,7 @@
 print("banner.py imported")
 fontWidth = 6
 screenWidth = 72
-framerateBuffer = 15 #if buffer == fps, this delays appearance by 1 second
+framerateBuffer = 12 #if buffer == fps, this delays appearance by 1 second
 
 class banner:
     def __init__(self, text):
@@ -25,9 +25,12 @@ class banner:
 
 
 #banner was made for scrolling long text strings. Here's some for Blackjack.
+
+# Gameplay Banners
 continueString = "Press A to continue."
 continueBan = banner(continueString)
 
+# Settings Menu Banners
 objectiveBan = banner("Try to get your cards to equal 21.")
 bustBan = banner("If you go over 21, that's a bust!")
 scoringBan = banner("Face cards are worth 10. Aces are worth 11 or 1.")

@@ -1,9 +1,8 @@
 ###################################################################
 # Blackjack for Thumby
 # Todo:
-# handle hit/stand on soft 17
-# add sounds
-# fix Bust state issues
+# re-evaluate eatMash(). Needed or is there a better way?
+# Fix natural BJ vs 21 win/lose
 ###################################################################
 import thumby
 import random
@@ -29,7 +28,7 @@ from blackjackMenu import *
 #globals
 framerate = 24
 pScore = 0
-fScore = 0
+dScore = 0
 dealerHandGoal = 17
 bust = 22
 line1 = 1
@@ -55,6 +54,8 @@ if (thumby.saveData.hasItem("dealerWins")):
     dealerWins = int(thumby.saveData.getItem("dealerWins"))
 if (thumby.saveData.hasItem("cardBackKey")):
     cardBack = cardBackDict[str(thumby.saveData.getItem("cardBackKey"))]
+if (thumby.saveData.hasItem("hitOnSoft17")):
+    hitOnSoft17 = int(thumby.saveData.getItem("hitOnSoft17"))
         
 ###########################################setup
 #random.seed(148954)
@@ -118,12 +119,12 @@ def slideFaceDown(hand):
         thumby.display.drawSprite(back)
         thumby.display.update()
     
-def playerWinCheck(pScore, fScore):
+def didPlayerWin(pScore, dScore):
     if pScore > 21:
         return False
-    elif fScore > 21:
+    elif dScore > 21:
         return True
-    elif pScore > fScore:
+    elif pScore > dScore:
         return True
     else:
         return False
@@ -271,11 +272,16 @@ while gameRun:
             thumby.display.update()
             waitForInput("Blackjack! ", line2)
             gamestate = "scoring"
-            
+        elif playerHandScore == 22: #did player get pair of aces on deal?
+            hand[0].value = 1
+            print("bust prevented by Ace")
+            playerHandScore = valueHand(hand)
+            gamestate = "playerTurn"
         else:
             gamestate = "playerTurn"
         
     if gamestate == "playerTurn":
+        #LOOPING gamestate
         #display hands and let player take action
         # draw the cards
         
@@ -301,11 +307,14 @@ while gameRun:
             thumby.display.update()
             
         elif view == 3:
-            pass
-    
+            thumby.display.fill(0)
+            thumby.display.drawText("Up: Dealer", 1, line1, 1)
+            thumby.display.drawText("Left: Score", 1, line2, 1)
+            thumby.display.drawText("Down: Menu", 1, line3, 1)
+            thumby.display.update()
         # Input section
         
-        #player looks at dealer hand 
+        #player looks at dealer hand or enters menu 
         if thumby.buttonU.pressed():
             view = 1
         elif thumby.buttonL.pressed():
@@ -321,6 +330,8 @@ while gameRun:
                 dealerWins = int(thumby.saveData.getItem("dealerWins"))
             if (thumby.saveData.hasItem("cardBackKey")):
                 cardBack = cardBackDict[str(thumby.saveData.getItem("cardBackKey"))]
+            if (thumby.saveData.hasItem("hitOnSoft17")):
+                hitOnSoft17 = int(thumby.saveData.getTime("playerWins"))
             eatMash()
         else:
             view = 0
@@ -335,21 +346,22 @@ while gameRun:
             
             #check score
             if playerHandScore >= bust:
+                # if player has an ace worth 11, swap it for 1.
                 for each in hand:
                     if each.value == 11:
                         each.value = 1
                         print("bust prevented by Ace")
                         playerHandScore = valueHand(hand)
                         break
-                else:
-                    thumby.display.fill(0)
-                    thumby.display.drawText("Player: " + str(playerHandScore), 1,line1,1)
-                    thumby.display.drawText("Bust...", 1, line2, 1)
-                    drawHand(hand)
-                    thumby.display.update()
-                    #gameRun = False
-                    waitForInput("Bust...", line2)
-                    gamestate = "scoring"
+            if playerHandScore >= bust:
+                # if we got here, player had no aces and busts    
+                thumby.display.fill(0)
+                thumby.display.drawText("Player: " + str(playerHandScore), 1,line1,1)
+                #thumby.display.drawText("Bust...", 1, line2, 1)
+                drawHand(hand)
+                thumby.display.update()
+                waitForInput("Bust...", line2)
+                gamestate = "scoring"
                 
         #or player pass
         if thumby.buttonB.justPressed() and playerHandScore < bust:
@@ -357,20 +369,50 @@ while gameRun:
     
         #player stays, so dealer hits if needed to beat dealer score
     if gamestate == "dealerTurn":
+        #LINEAR gamestate
         #show dealer hand
         dealerHandScore = valueHand(dealerHand)
         thumby.display.fill(0)
         thumby.display.drawText("Dealer: ?",1,line1,1)
         thumby.display.update()
         dealerReveal(dealerHand) #dramatic reveal of face down card
+        # check for pair aces
+        if (dealerHandScore == 22):
+            dealerHand[0].value = 1
+            dealerHandScore = valueHand(dealerHand)
+        
         thumby.display.fill(0)
         thumby.display.drawText("Dealer: " + str(dealerHandScore),1,line1,1)
         drawHand(dealerHand)
         thumby.display.update()
         time.sleep(1)
-            
-        #TODO: check for soft 17
         
+ 
+            
+            
+        # Check for soft 17
+        if hitOnSoft17 and (dealerHandScore == 17) and \
+        ((dealerHand[0].value == 11) or (dealerHand[1].value == 11)):
+            newCard = random.choice(deck)
+            slideCard(dealerHand, newCard)
+            dealerHand.append(newCard)
+            deck.remove(newCard)
+            dealerHandScore = valueHand(dealerHand)
+            # after forced hit, check for bust.
+            if dealerHandScore > 21:
+                for each in dealerHand:
+                    if each.value == 11:
+                        each.value = 1
+                        print("Dealer bust prevented by Ace")
+                        dealerHandScore = valueHand(hand)
+                        break
+                        thumby.display.fill(0)
+            thumby.display.drawText("Dealer:" + str(dealerHandScore),1,line1,1)
+            drawHand(dealerHand)
+            thumby.display.update()
+            time.sleep(1)
+        
+        # Now dealer hits until 17 or bust.
         while dealerHandScore < dealerHandGoal:
             newCard = random.choice(deck)
             slideCard(dealerHand, newCard)
@@ -384,7 +426,7 @@ while gameRun:
                 for each in dealerHand:
                     if each.value == 11:
                         each.value = 1
-                        print("bust prevented by Ace")
+                        print("Dealer bust prevented by Ace")
                         dealerHandScore = valueHand(hand)
                         break
                 
@@ -396,6 +438,7 @@ while gameRun:
             
             
         #when dealer is done
+        
         waitForInput("", line2)
         gamestate = "scoring"
         
@@ -405,9 +448,12 @@ while gameRun:
         playerHandScore = valueHand(hand)
         dealerHandScore = valueHand(dealerHand)
         #determine winner
-        msg = "Dealer wins...!"
-        if playerWinCheck(playerHandScore, dealerHandScore):
+        if playerHandScore == dealerHandScore:
+            msg = "Standoff."
+        elif didPlayerWin(playerHandScore, dealerHandScore):
             msg = "Player Wins!"
+        else:
+            msg = "Dealer Wins..."
         #display message to player
         thumby.display.fill(0)
         thumby.display.drawText("P: " + str(playerHandScore) + ", D: " + str(dealerHandScore), 1,line1,1)
@@ -415,7 +461,9 @@ while gameRun:
         thumby.display.update()    
         #gameRun = False
         waitForInput("", line3)
-        if playerWinCheck(playerHandScore, dealerHandScore):
+        if playerHandScore == dealerHandScore:
+            pass
+        elif didPlayerWin(playerHandScore, dealerHandScore):
             playerWins += 1
             thumby.saveData.setItem("playerWins", playerWins)
         else:

@@ -6,7 +6,7 @@ from cards import *
 print("menu.py imported")
 def eatMash():
     # this function is placed after animations like the card slide
-    # or screen changes it prevents the user from accidentally 
+    # or screen changes. it prevents the user from accidentally 
     # sending button presses before they see the game state.
     if thumby.buttonA.justPressed():
         print("DEBUG: A dropped")
@@ -80,7 +80,8 @@ def menuRun():
         "Spade":bigSpade}
     if (thumby.saveData.hasItem("cardBackKey")):
         cardMenu.index = cardMenu.items.index(thumby.saveData.getItem("cardBackKey"))
-        
+    if (thumby.saveData.hasItem("hitSoft17")):
+        dealerMenu.toggle = thumby.saveData.getItem("hitSoft17")
     resetMenu = MENU("Reset Score")
     
     creditsMenu = MENU("Credits")
@@ -128,7 +129,7 @@ def menuRun():
         elif menuList[page].title == "Help":
             currentBanner = helpMenu.cur()
             thumby.display.drawText(currentBanner.text, currentBanner.pos, line2, 1)
-            thumby.display.drawText("Scroll (U/D)", 1, line3, 1)
+            thumby.display.drawText("More (U/D)", 1, line3, 1)
             thumby.display.drawText("FastFwd (A)", 1, line4, 1)
             thumby.display.update()
             currentBanner.step(banScroll)
@@ -148,9 +149,12 @@ def menuRun():
             thumby.display.drawText("on soft 17?", 1, line3, 1)
             if dealerMenu.toggle:
                 thumby.display.drawText("Yes", 1, line4, 1)
+                thumby.saveData.setItem("hitSoft17", 1)
+                thumby.saveData.save()
             else:
                 thumby.display.drawText("No", 1, line4, 1)
-                
+                thumby.saveData.setItem("hitSoft17", 0)
+                thumby.saveData.save()
             if thumby.buttonA.justPressed():
                 dealerMenu.flipToggle()
             thumby.display.update()
@@ -204,17 +208,5 @@ def menuRun():
             creditsBan.step(banScroll)
             if thumby.buttonA.pressed():
                 creditsBan.step(1)
-        
-
-            
-            
-#show current options
-#if l scroll left
-#if r scroll right
-#U/D scroll through menu
-#press A to toggle
-#press B to return
-
-#flow:
-#show current page
-#get inputs
+                
+                
