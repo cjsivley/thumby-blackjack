@@ -2,7 +2,8 @@
 # Blackjack for Thumby
 # Todo:
 # re-evaluate eatMash(). Needed or is there a better way?
-# Fix natural BJ vs 21 win/lose
+# create test suite
+# add score difference: natural 21 (face + ace) > sum 21.
 ###################################################################
 import thumby
 import random
@@ -211,12 +212,6 @@ hand = []
 dealerHand = []
     
 ###############game loop
-
-#draw sprites and text
-
-#handle inputs
-
-#decisions
 playerHandScore = valueHand(hand)
 dealerHandScore = valueHand(dealerHand)
 
@@ -225,7 +220,7 @@ view = 0
 
 #gamestates:
 #splash = intro and help
-#deal = deal cards and check for blackjack on turn 0.
+#deal = deal cards and check for blackjack/pair aces on turn 0.
 #playerTurn = player hit/pass choice, loops until bust or pass
 #dealerTurn = dramatic dealer reveal, then dealer hits until goal or bust
 #scoring = score check and results, save results
@@ -262,8 +257,11 @@ while gameRun:
             dealerHand.append(newCard)
             deck.remove(newCard)
             dealerHandScore = valueHand(dealerHand)
+        # check for DEALER pair aces
+        if (dealerHandScore == 22):
+            dealerHand[0].value = 1
+            dealerHandScore = valueHand(dealerHand)
         
-        eatMash()
         #did the player get a blackjack?    
         if playerHandScore == 21:
             thumby.display.fill(0)
@@ -274,44 +272,46 @@ while gameRun:
             gamestate = "scoring"
         elif playerHandScore == 22: #did player get pair of aces on deal?
             hand[0].value = 1
-            print("bust prevented by Ace")
+            print("Twin aces = 12 for now")
             playerHandScore = valueHand(hand)
+            eatMash()
             gamestate = "playerTurn"
         else:
+            eatMash()
             gamestate = "playerTurn"
         
     if gamestate == "playerTurn":
         #LOOPING gamestate
         #display hands and let player take action
-        # draw the cards
         
         #display based on view flags previous loop
-        if view == 0:
+        if view == 0: #normal view
             thumby.display.fill(0)
             thumby.display.drawText("Player: " + str(playerHandScore), 1,line1,1)
             thumby.display.drawText("A=hit,B=stay", 1,line2,1)
             drawHand(hand)
             thumby.display.update()
         
-        elif view == 1:
+        elif view == 1: #dealer view
             thumby.display.fill(0)
             thumby.display.drawText("Dealer:", 1, line1, 1)
             thumby.display.drawText("? + " + str(dealerHand[1].value), 1,line2,1)
             drawdealerHand(dealerHand)
             thumby.display.update()
             
-        elif view == 2:
+        elif view == 2: #score view
             thumby.display.fill(0)
             thumby.display.drawText("Wins: " + str(playerWins), 1,line1,1)
             thumby.display.drawText("Losses: " + str(dealerWins), 1,line2,1)
             thumby.display.update()
             
-        elif view == 3:
+        elif view == 3: #controls view
             thumby.display.fill(0)
             thumby.display.drawText("Up: Dealer", 1, line1, 1)
             thumby.display.drawText("Left: Score", 1, line2, 1)
             thumby.display.drawText("Down: Menu", 1, line3, 1)
             thumby.display.update()
+        
         # Input section
         
         #player looks at dealer hand or enters menu 
@@ -376,11 +376,6 @@ while gameRun:
         thumby.display.drawText("Dealer: ?",1,line1,1)
         thumby.display.update()
         dealerReveal(dealerHand) #dramatic reveal of face down card
-        # check for pair aces
-        if (dealerHandScore == 22):
-            dealerHand[0].value = 1
-            dealerHandScore = valueHand(dealerHand)
-        
         thumby.display.fill(0)
         thumby.display.drawText("Dealer: " + str(dealerHandScore),1,line1,1)
         drawHand(dealerHand)
@@ -438,7 +433,7 @@ while gameRun:
             
             
         #when dealer is done
-        
+        dealerHandScore = valueHand(dealerHand)
         waitForInput("", line2)
         gamestate = "scoring"
         
