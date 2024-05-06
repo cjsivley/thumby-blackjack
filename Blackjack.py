@@ -1,9 +1,8 @@
 ###################################################################
 # Blackjack for Thumby
-# Todo:
-# re-evaluate eatMash(). Needed or is there a better way?
-# create test suite
-# add score difference: natural 21 (face + ace) > sum 21.
+# by Codey Sivley
+# please send bug reports via GitHub issues: 
+# https://github.com/cjsivley/thumby-blackjack
 ###################################################################
 import thumby
 import random
