@@ -421,7 +421,7 @@ while gameRun:
                     if each.value == 11:
                         each.value = 1
                         print("Dealer bust prevented by Ace")
-                        dealerHandScore = valueHand(hand)
+                        dealerHandScore = valueHand(dealerHand)
                         break
                 
             thumby.display.fill(0)
